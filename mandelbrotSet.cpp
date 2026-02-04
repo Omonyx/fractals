@@ -25,7 +25,8 @@ struct Mandelbrot {
         int threads_div = HEIGHT / NUM_THREADS;
         for (int i = 0; i < NUM_THREADS; i++) {
             int start = i * threads_div;
-            int end = (i == NUM_THREADS - 1) ? HEIGHT : (i + 1) / threads_div;
+            int end = (i == NUM_THREADS - 1) ? HEIGHT : (i + 1) * threads_div;
+
             threads.push_back(std::thread(&Mandelbrot::calcul_each_threads, this, start, end));
         }
         for (auto& thread : threads) {
