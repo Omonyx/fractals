@@ -42,8 +42,9 @@ struct Mandelbrot {
     int HEIGHT;
     int TYPE;
     int NUM_THREADS;
-    double CX;
-    double CY;
+    double SAT;
+    std::pair<double, double> C;
+    std::pair<int, int> HUE;
     const int MAX_ITER;
 
     double x_min = -2;
@@ -51,7 +52,7 @@ struct Mandelbrot {
     double y_min = -1.5;
     double y_max = 1.5;
 
-    Mandelbrot(int width, int height, int max_iter, int numThreads, double cx, double cy, int type): WIDTH(width), HEIGHT(height), MAX_ITER(max_iter), NUM_THREADS(numThreads), CX(cx), CY(cy), TYPE(type) {
+    Mandelbrot(int width, int height, int max_iter, int numThreads, double cx, double cy, int add_hue, int coef_hue, double sat, int type): WIDTH(width), HEIGHT(height), MAX_ITER(max_iter), NUM_THREADS(numThreads), C(cx, cy), HUE(add_hue, coef_hue), SAT(sat), TYPE(type) {
         image.resize(width * height);
     }
     void calcul_fractal() {
@@ -70,7 +71,7 @@ struct Mandelbrot {
     void calcul_each_threads(int start, int end) {
         for (int x = 0; x < WIDTH; x++) {
             for (int y = start; y < end; y++) {
-                std::complex<double> c = TYPE == 2 ? std::complex(CX, CY) : std::complex(x_min + (x_max - x_min) * x / WIDTH, y_min + (y_max - y_min) * y / HEIGHT);
+                std::complex<double> c = TYPE == 2 ? std::complex(C.first, C.second) : std::complex(x_min + (x_max - x_min) * x / WIDTH, y_min + (y_max - y_min) * y / HEIGHT);
                 std::complex<double> z = TYPE == 2 ? std::complex(x_min + (x_max - x_min) * x / WIDTH, y_min + (y_max - y_min) * y / HEIGHT) : 0;
                 int iter = 0;
 
@@ -100,7 +101,7 @@ struct Mandelbrot {
 
         for (int i = 0; i < WIDTH * HEIGHT; i++) {
             double t = image[i].first;
-            RGB color_convert = hsv_to_rgb(220 + 120 * t, 0.7, image[i].second == MAX_ITER ? 0 : 1);
+            RGB color_convert = hsv_to_rgb(HUE.first + HUE.second * t, SAT, image[i].second == MAX_ITER ? 0 : 1);
             unsigned char r = color_convert.r;
             unsigned char g = color_convert.g;
             unsigned char b = color_convert.b;
@@ -115,16 +116,19 @@ int main() {
     int height = 3000;
     int max_iter = 25;
     int fractal_type = 0;
+    double sat = 0.7;
     double cx = 0;
     double cy = 0;
+    int add_hue = 0;
+    int coef_hue = 360;
     unsigned int num_threads = std::thread::hardware_concurrency();
     if (num_threads == 0) {
         num_threads = 1;
     }
 
     std::string fileName;
-    std::cout << "Enter : WIDTH HEIGHT MAX_ITER\n";
-    std::cin >> width >> height >> max_iter;
+    std::cout << "Enter : WIDTH HEIGHT MAX_ITER SAT ADD_HUE COEF_COEF\n";
+    std::cin >> width >> height >> max_iter >> sat >> add_hue >> coef_hue;
     std::cout << "[1] Mandelbrot Set\n[2] Julia Set\n";
     std::cin >> fractal_type;
     switch (fractal_type) {
@@ -140,7 +144,7 @@ int main() {
             break;
     }
 
-    Mandelbrot fractal = Mandelbrot(width, height, max_iter, num_threads, cx, cy, fractal_type);
+    Mandelbrot fractal = Mandelbrot(width, height, max_iter, num_threads, cx, cy, add_hue, coef_hue, sat, fractal_type);
     fractal.calcul_fractal();
     std::cout << "Fractal generated.\n" << "Enter image file's name : \n";
     std::cin >> fileName;
