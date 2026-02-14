@@ -1,134 +1,161 @@
 #include <SFML/Graphics.hpp>
-#include <complex>
-#include <iostream>
 #include <vector>
 #include <thread>
-#include <utility>
+#include <iostream>
+#include <cmath>
 
 struct RGB {
     unsigned char r, g, b;
 };
 
 RGB hsv_to_rgb(double h, double s, double v) {
+    h = fmod(h, 360);
+    if (h < 0) h += 360;
+
     double c = v * s;
-    double x = c * (1 - std::fabs(std::fmod(h / 60.0, 2) - 1));
+    double x = c * (1 - std::fabs(fmod(h / 60.0, 2) - 1));
     double m = v - c;
+    double r1 = 0, g1 = 0, b1 = 0;
 
-    double r1, g1, b1;
+    if (h < 60)       { r1 = c; g1 = x; }
+    else if (h < 120) { r1 = x; g1 = c; }
+    else if (h < 180) { g1 = c; b1 = x; }
+    else if (h < 240) { g1 = x; b1 = c; }
+    else if (h < 300) { r1 = x; b1 = c; }
+    else              { r1 = c; b1 = x; }
 
-    if (h < 60) {
-        r1 = c; g1 = x; b1 = 0;
-    } else if (h < 120) {
-        r1 = x; g1 = c; b1 = 0;
-    } else if (h < 180) {
-        r1 = 0; g1 = c; b1 = x;
-    } else if (h < 240) {
-        r1 = 0; g1 = x; b1 = c;
-    } else if (h < 300) {
-        r1 = x; g1 = 0; b1 = c;
-    } else {
-        r1 = c; g1 = 0; b1 = x;
-    }
-
-    return {
-        (unsigned char)((r1 + m) * 255),
-        (unsigned char)((g1 + m) * 255),
-        (unsigned char)((b1 + m) * 255)
-    };
+    return {(unsigned char)((r1 + m) * 255), (unsigned char)((g1 + m) * 255), (unsigned char)((b1 + m) * 255)};
 }
+
 struct Mandelbrot {
-    std::vector<std::pair<double, double>> image;
     int WIDTH;
     int HEIGHT;
-    int TYPE;
+    int MAX_ITER;
     int NUM_THREADS;
+    int ADD_HUE;
+    int COEF_HUE;
+    int TYPE;
     double SAT;
     std::pair<double, double> C;
-    std::pair<int, int> HUE;
-    const int MAX_ITER;
 
-    double x_min = -2;
-    double x_max = 2;
+    double x_min = -2.0;
+    double x_max =  2.0;
     double y_min = -1.5;
-    double y_max = 1.5;
+    double y_max =  1.5;
 
-    Mandelbrot(int width, int height, int max_iter, int numThreads, double cx, double cy, int add_hue, int coef_hue, double sat, int type): WIDTH(width), HEIGHT(height), MAX_ITER(max_iter), NUM_THREADS(numThreads), C(cx, cy), HUE(add_hue, coef_hue), SAT(sat), TYPE(type) {
-        image.resize(width * height);
-    }
-    void calcul_fractal() {
-        std::vector<std::thread> threads;
-        int threads_div = HEIGHT / NUM_THREADS;
-        for (int i = 0; i < NUM_THREADS; i++) {
-            int start = i * threads_div;
-            int end = (i == NUM_THREADS - 1) ? HEIGHT : (i + 1) * threads_div;
+    std::vector<double> smoother;
+    std::vector<int> iterations;
 
-            threads.push_back(std::thread(&Mandelbrot::calcul_each_threads, this, start, end));
-        }
-        for (auto& thread : threads) {
-            thread.join();
-        }
+    Mandelbrot(int w, int h, int maxIter, int num_threads, double cx, double cy, int add_hue, int coef_hue, double sat, int type) : WIDTH(w), HEIGHT(h), MAX_ITER(maxIter), NUM_THREADS(num_threads), C(cx, cy), ADD_HUE(add_hue), COEF_HUE(coef_hue), SAT(sat), TYPE(type) {
+        smoother.resize(WIDTH * HEIGHT);
+        iterations.resize(WIDTH * HEIGHT);
     }
-    void calcul_each_threads(int start, int end) {
-        for (int x = 0; x < WIDTH; x++) {
-            for (int y = start; y < end; y++) {
-                std::complex<double> c = TYPE == 2 ? std::complex(C.first, C.second) : std::complex(x_min + (x_max - x_min) * x / WIDTH, y_min + (y_max - y_min) * y / HEIGHT);
-                std::complex<double> z = TYPE == 2 ? std::complex(x_min + (x_max - x_min) * x / WIDTH, y_min + (y_max - y_min) * y / HEIGHT) : 0;
+
+    void compute_each_thread(int y_start, int y_end) {
+        for (int y = y_start; y < y_end; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                double cr = TYPE == 2 ? C.first : x_min + (x_max - x_min) * x / WIDTH;
+                double ci = TYPE == 2 ? C.second : y_min + (y_max - y_min) * y / HEIGHT;
+                double zr = TYPE == 2 ? x_min + (x_max - x_min) * x / WIDTH : 0;
+                double zi = TYPE == 2 ? y_min + (y_max - y_min) * y / HEIGHT : 0;
                 int iter = 0;
 
-                while (std::abs(z) <= 4 && iter < MAX_ITER) {
-                    z = z * z + c;
+                while (zr * zr + zi * zi <= 4 && iter < MAX_ITER) {
+                    double temp = zr * zr - zi * zi + cr;
+                    zi = 2 * zr * zi + ci;
+                    zr = temp;
                     iter++;
                 }
-                image[y * WIDTH + x] = {(double)((iter + 1 - log(log(std::abs(z))) / log(2)) / (double)MAX_ITER), iter};
+
+                int index = y * WIDTH + x;
+                iterations[index] = iter;
+
+                if (iter < MAX_ITER) {
+                    double mu = iter + 1 - log(log(sqrt(zr * zr + zi * zi))) / log(2);
+                    smoother[index] = mu / MAX_ITER;
+                } else {
+                    smoother[index] = 0;
+                }
             }
         }
     }
-    void zoomFractal(double x_min, double x_max, double y_min, double y_max) {
-        x_min = x_min;
-        x_max = x_max;
-        y_min = y_min;
-        y_max = y_max;
+    void compute_fractal() {
+        std::vector<std::thread> threads;
+        int thread_division = HEIGHT / NUM_THREADS;
+
+        for (int i = 0; i < NUM_THREADS; i++) {
+            int start = i * thread_division;
+            int end = (i == NUM_THREADS - 1) ? HEIGHT : (i + 1) * thread_division;
+
+            threads.emplace_back(&Mandelbrot::compute_each_thread, this, start, end);
+        }
+
+        for (auto& thread : threads)
+            thread.join();
     }
-    void resetZoom() {
-        x_min = -2;
-        x_max = 2;
-        y_min = -1.5;
-        y_max = 1.5;
+    void zoom(double new_x_min, double new_x_max, double new_y_min, double new_y_max) {
+        x_min = new_x_min;
+        x_max = new_x_max;
+        y_min = new_y_min;
+        y_max = new_y_max;
     }
-    sf::Image showFractal(sf::Image background) {
-        for (unsigned int x = 0; x < WIDTH; x++) {
-            for (unsigned int y = 0; y < HEIGHT; y++) {
-                double t = image[y * WIDTH + x].first;
-                RGB color_convert = hsv_to_rgb(HUE.first + HUE.second * t, SAT, image[y * WIDTH + x].second == MAX_ITER ? 0 : 1);
-                sf::Color new_color(color_convert.r, color_convert.g, color_convert.b);
-                background.setPixel({x, y}, new_color);
+    void render_fractal(sf::Image& new_image) {
+        for (unsigned int y = 0; y < HEIGHT; y++) {
+            for (unsigned int x = 0; x < WIDTH; x++) {
+                double t = smoother[y * WIDTH + x];
+                RGB color = hsv_to_rgb(120.0 * t, 0.8, iterations[y * WIDTH + x] == MAX_ITER ? 0.0 : 1.0);
+                new_image.setPixel({x, y}, sf::Color(color.r, color.g, color.b));
             }
         }
-        return background;
     }
 };
-int main() {
-    unsigned int num_threads = std::thread::hardware_concurrency();
-    if (num_threads == 0) {
-        num_threads = 1;
-    }
-    sf::RenderWindow window(sf::VideoMode({1200u, 900u}), "Mandelbrot");
-    sf::Image image({1200, 900}, sf::Color::Black);
-    Mandelbrot fractal = Mandelbrot(1200, 900, 25, num_threads, 0, 0, 0, 120, 0.7, 1);
-    fractal.calcul_fractal();
-    sf::Texture texture(fractal.showFractal(image));
-    sf::Sprite sprite(texture);
 
-    while (window.isOpen())
-    {
+int main() {
+    sf::RenderWindow window(sf::VideoMode({1200, 900}), "Fractal preview");
+    sf::Image image({1200, 900}, sf::Color::Black);
+    sf::Texture texture(image);
+    sf::Sprite sprite(texture);
+    unsigned threads = std::thread::hardware_concurrency();
+    if (threads == 0) threads = 1;
+
+    Mandelbrot fractal(1200, 900, 400, threads, 0, 0, 0, 360, 0.7, 1);
+
+    fractal.compute_fractal();
+    fractal.render_fractal(image);
+    texture.update(image);
+
+    sf::Vector2i start;
+    sf::Vector2i end;
+    bool selecting = false;
+
+    while (window.isOpen()) {
         while (auto event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>())
                 window.close();
+            if (event->is<sf::Event::MouseButtonPressed>()) {
+                start = sf::Mouse::getPosition(window);
+                selecting = true;
+            }
+            if (event->is<sf::Event::MouseButtonReleased>()) {
+                end = sf::Mouse::getPosition(window);
+                selecting = false;
+
+                if (start != end) {
+                    double new_x_min = fractal.x_min + (fractal.x_max - fractal.x_min) * std::min(start.x, end.x) / 1200;
+                    double new_x_max = fractal.x_min + (fractal.x_max - fractal.x_min) * std::max(start.x, end.x) / 1200;
+                    double new_y_min = fractal.y_min + (fractal.y_max - fractal.y_min) * std::min(start.y, end.y) / 900;
+                    double new_y_max = fractal.y_min + (fractal.y_max - fractal.y_min) * std::max(start.y, end.y) / 900;
+
+                    fractal.zoom(new_x_min, new_x_max, new_y_min, new_y_max);
+                    fractal.compute_fractal();
+                    fractal.render_fractal(image);
+                    texture.update(image);
+                }
+            }
         }
         window.clear();
         window.draw(sprite);
         window.display();
     }
-
     return 0;
 }
