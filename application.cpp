@@ -4,6 +4,7 @@
 #include <thread>
 #include <iostream>
 #include <cmath>
+#include <stack>
 
 struct RGB {
     unsigned char r, g, b;
@@ -35,6 +36,7 @@ struct Mandelbrot {
     int NUM_THREADS;
     int TYPE;
     double SAT;
+    std::stack<std::pair<std::pair<double, double>, std::pair<double, double>>> history;
     std::pair<double, double> HUE;
     std::pair<double, double> C;
 
@@ -49,6 +51,7 @@ struct Mandelbrot {
     Mandelbrot(int w, int h, int maxIter, int num_threads, double cx, double cy, int add_hue, int coef_hue, double sat, int type) : WIDTH(w), HEIGHT(h), MAX_ITER(maxIter), NUM_THREADS(num_threads), C(cx, cy), HUE(add_hue, coef_hue), SAT(sat), TYPE(type) {
         smoother.resize(WIDTH * HEIGHT);
         iterations.resize(WIDTH * HEIGHT);
+        history.push(std::make_pair(std::make_pair(-2.0, 2.0), std::make_pair(-1.5, 1.5)));
     }
     void compute_fractal() {
         std::vector<std::thread> threads;
@@ -156,6 +159,15 @@ int main() {
                     fractal.compute_fractal();
                     fractal.render_fractal(image);
                     texture.update(image);
+                } else if (keyPressed->code == sf::Keyboard::Key::U) {
+                    std::pair<std::pair<double, double>, std::pair<double, double>> old_view = fractal.history.top();
+                    fractal.zoom(old_view.first.first, old_view.first.second, old_view.second.first, old_view.second.second);
+                    fractal.compute_fractal();
+                    fractal.render_fractal(image);
+                    texture.update(image);
+                    if (fractal.history.top() != std::make_pair(std::make_pair(-2.0, 2.0), std::make_pair(-1.5, 1.5))) {
+                        fractal.history.pop();
+                    }
                 }
             }
             if (event->is<sf::Event::MouseButtonPressed>()) {
@@ -173,6 +185,7 @@ int main() {
                     double new_y_max = fractal.y_min + (fractal.y_max - fractal.y_min) * std::max(start.y, end.y) / 900;
 
                     fractal.zoom(new_x_min, new_x_max, new_y_min, new_y_max);
+                    fractal.history.push(std::make_pair(std::make_pair(new_x_min, new_x_max), std::make_pair(new_y_min, new_y_max)));
                     fractal.compute_fractal();
                     fractal.render_fractal(image);
                     texture.update(image);
