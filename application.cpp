@@ -6,6 +6,10 @@
 #include <cmath>
 #include <stack>
 
+std::string GREEN = "\e[1;32m";
+std::string BLUE = "\e[1;34m";
+std::string RESET = "\e[0m";
+
 struct RGB {
     unsigned char r, g, b;
 };
@@ -122,14 +126,14 @@ int main() {
     int ADD_HUE = 0;
     int COEF_HUE = 360;
     std::pair<double, double> C;
-    std::cout << "Enter TYPE (1) : \n[1] Mandelbrot set\n[2] Julia set\n";
+    std::cout << GREEN << "Enter TYPE (1) : \n[1] Mandelbrot set\n[2] Julia set\n" << BLUE;
     std::cin >> TYPE;
-    std::cout << "Enter DEEP compute (200) : \n";
+    std::cout << GREEN << "Enter DEEP compute (300) : \n" << BLUE;
     std::cin >> DEPTH;
-    std::cout << "Enter ADD_HUE (0), COEF_HUE (360), SAT (0.7) : \n";
+    std::cout << GREEN << "Enter ADD_HUE (145), COEF_HUE (260), SAT (1) : \n" << BLUE;
     std::cin >> ADD_HUE >> COEF_HUE >> SAT;
     if (TYPE == 2) {
-        std::cout << "Enter CX (0.3), CY (0.7) : \n";
+        std::cout << GREEN << "Enter CX (-0.7), CY (0.3) : \n" << BLUE;
         std::cin >> C.first >> C.second;
     }
     sf::RenderWindow window(sf::VideoMode({1200, 900}), "Fractal preview");
@@ -184,8 +188,8 @@ int main() {
                     double new_y_min = fractal.y_min + (fractal.y_max - fractal.y_min) * std::min(start.y, end.y) / 900;
                     double new_y_max = fractal.y_min + (fractal.y_max - fractal.y_min) * std::max(start.y, end.y) / 900;
 
+                    fractal.history.push(std::make_pair(std::make_pair(fractal.x_min, fractal.x_max), std::make_pair(fractal.y_min, fractal.y_max)));
                     fractal.zoom(new_x_min, new_x_max, new_y_min, new_y_max);
-                    fractal.history.push(std::make_pair(std::make_pair(new_x_min, new_x_max), std::make_pair(new_y_min, new_y_max)));
                     fractal.compute_fractal();
                     fractal.render_fractal(image);
                     texture.update(image);
