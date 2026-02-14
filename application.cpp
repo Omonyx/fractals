@@ -1,5 +1,5 @@
+#include <SFML/Graphics.hpp>
 #include <complex>
-#include <fstream>
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -83,61 +83,52 @@ struct Mandelbrot {
             }
         }
     }
-    void saveFractal(const std::string &filename) {
-        std::ofstream ofs(filename, std::ios::binary);
-        ofs << "P6\n" << WIDTH << " " << HEIGHT << "\n255\n";
-
-        for (int i = 0; i < WIDTH * HEIGHT; i++) {
-            double t = image[i].first;
-            RGB color_convert = hsv_to_rgb(HUE.first + HUE.second * t, SAT, image[i].second == MAX_ITER ? 0 : 1);
-            unsigned char r = color_convert.r;
-            unsigned char g = color_convert.g;
-            unsigned char b = color_convert.b;
-            unsigned char color[3] = { r, g, b };
-            ofs.write(reinterpret_cast<char*>(color), 3);
+    void zoomFractal(double x_min, double x_max, double y_min, double y_max) {
+        x_min = x_min;
+        x_max = x_max;
+        y_min = y_min;
+        y_max = y_max;
+    }
+    void resetZoom() {
+        x_min = -2;
+        x_max = 2;
+        y_min = -1.5;
+        y_max = 1.5;
+    }
+    sf::Image showFractal(sf::Image background) {
+        for (unsigned int x = 0; x < WIDTH; x++) {
+            for (unsigned int y = 0; y < HEIGHT; y++) {
+                double t = image[y * WIDTH + x].first;
+                RGB color_convert = hsv_to_rgb(HUE.first + HUE.second * t, SAT, image[y * WIDTH + x].second == MAX_ITER ? 0 : 1);
+                sf::Color new_color(color_convert.r, color_convert.g, color_convert.b);
+                background.setPixel({x, y}, new_color);
+            }
         }
-        ofs.close();
+        return background;
     }
 };
 int main() {
-    int width = 4000;
-    int height = 3000;
-    int max_iter = 25;
-    int fractal_type = 0;
-    double sat = 0.7;
-    double cx = 0;
-    double cy = 0;
-    int add_hue = 0;
-    int coef_hue = 360;
     unsigned int num_threads = std::thread::hardware_concurrency();
     if (num_threads == 0) {
         num_threads = 1;
     }
-
-    std::string fileName;
-    std::cout << "Enter : WIDTH HEIGHT MAX_ITER SAT ADD_HUE COEF_COEF\n";
-    std::cin >> width >> height >> max_iter >> sat >> add_hue >> coef_hue;
-    std::cout << "[1] Mandelbrot Set\n[2] Julia Set\n";
-    std::cin >> fractal_type;
-    switch (fractal_type) {
-        case 1:
-            std::cout << "Calculing Mandelbrot Set...\n";
-            break;
-        case 2:
-            std::cout << "Enter size : CX CY\n";
-            std::cin >> cx >> cy;
-            std::cout << "Calculing Julia set...\n";
-            break;
-        default:
-            break;
-    }
-
-    Mandelbrot fractal = Mandelbrot(width, height, max_iter, num_threads, cx, cy, add_hue, coef_hue, sat, fractal_type);
+    sf::RenderWindow window(sf::VideoMode({1200u, 900u}), "Mandelbrot");
+    sf::Image image({1200, 900}, sf::Color::Black);
+    Mandelbrot fractal = Mandelbrot(1200, 900, 25, num_threads, 0, 0, 0, 120, 0.7, 1);
     fractal.calcul_fractal();
-    std::cout << "Fractal generated.\n" << "Enter image file's name : \n";
-    std::cin >> fileName;
-    fractal.saveFractal(fileName + ".ppm");
-    std::cout << "Image saved !";
+    sf::Texture texture(fractal.showFractal(image));
+    sf::Sprite sprite(texture);
+
+    while (window.isOpen())
+    {
+        while (auto event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>())
+                window.close();
+        }
+        window.clear();
+        window.draw(sprite);
+        window.display();
+    }
 
     return 0;
 }
