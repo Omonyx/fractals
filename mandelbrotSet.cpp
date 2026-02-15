@@ -1,6 +1,4 @@
 #include "MandelbrotSet.hpp"
-#include <thread>
-#include <cmath>
 
 MandelbrotSet::MandelbrotSet(int w, int h, int max_iter, int num_threads, int colorization, double rgb_coef[3]) : Fractal(w, h, max_iter, num_threads, colorization, rgb_coef) {}
 void MandelbrotSet::compute_fractal() {
@@ -38,3 +36,4 @@ void MandelbrotSet::compute_each_thread(int y_start, int y_end) {
         }
     }
 }
+MandelbrotSet::~MandelbrotSet() {}

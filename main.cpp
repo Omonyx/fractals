@@ -1,7 +1,7 @@
 #include <SFML/Graphics.hpp>
-#include "Fractal.cpp"
-#include "MandelbrotSet.cpp"
-#include "JuliaSet.cpp"
+#include "Fractal.hpp"
+#include "MandelbrotSet.hpp"
+#include "JuliaSet.hpp"
 #include <iostream>
 
 std::string GREEN = "\e[1;32m";

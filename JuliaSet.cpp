@@ -1,6 +1,4 @@
 #include "JuliaSet.hpp"
-#include <thread>
-#include <cmath>
 
 JuliaSet::JuliaSet(int w, int h, int max_iter, int num_threads, int colorization, double rgb_coef[3], std::pair<double, double> c) : Fractal(w, h, max_iter, num_threads, colorization, rgb_coef), C(c) {}
 void JuliaSet::compute_fractal() {
@@ -38,3 +36,4 @@ void JuliaSet::compute_each_thread(int y_start, int y_end) {
         }
     }
 }
+JuliaSet::~JuliaSet() {}
