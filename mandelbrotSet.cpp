@@ -32,8 +32,9 @@ void MandelbrotSet::compute_each_thread(int y_start, int y_end) {
                 smoother[index] = (double)(iter + 1 - log(log(sqrt(zr * zr + zi * zi))) / log(2)) / MAX_ITER;
             } else {
                 smoother[index] = 0;
-            }
-        }
-    }
-}
-MandelbrotSet::~MandelbrotSet() {}
+            };
+        };
+    };
+};
+
+MandelbrotSet::~MandelbrotSet() {};

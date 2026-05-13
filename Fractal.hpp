@@ -15,7 +15,8 @@ protected:
     int COLORIZATION;
     double RGB_COEF[3];
     std::vector<double> smoother;
-    std::vector<int> iterations;
+    std::vector<double> iterations;
+    std::vector<std::complex<double>> zs;
 public:
     double x_min;
     double x_max;

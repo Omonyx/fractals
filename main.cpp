@@ -2,6 +2,7 @@
 #include "Fractal.hpp"
 #include "MandelbrotSet.hpp"
 #include "JuliaSet.hpp"
+#include "NewtonSet.hpp"
 #include <iostream>
 
 std::string GREEN = "\e[1;32m";
@@ -13,34 +14,33 @@ int main() {
     int DEPTH = 200;
     int TYPE = 1;
     int COLORIZATION = 1;
-    double SAT = 0.7;
-    int ADD_HUE = 0;
-    int COEF_HUE = 360;
     double RGB_COEF[3] = {9, 15, 8.5};
     std::pair<double, double> C;
     unsigned threads = std::thread::hardware_concurrency();
     if (threads == 0) threads = 1;
 
-    std::cout << GREEN << "Enter TYPE (1) : \n[1] Mandelbrot set\n[2] Julia set\n" << BLUE;
+    std::cout << GREEN << "Enter TYPE (1) : \n[1] Mandelbrot set\n[2] Julia set\n[3] Newton set\n" << BLUE;
     std::cin >> TYPE;
-    std::cout << GREEN << "Enter COLORIZATION mode (1) : \n[1] Standard\n[2] Rainbow\n" << BLUE;
+    std::cout << GREEN << "Enter COLORIZATION mode (1) : \n[1] Standard\n[2] Rainbow\n[3] Newton\n" << BLUE;
     std::cin >> COLORIZATION;
     std::cout << GREEN << "Enter DEEP compute (300) : \n" << BLUE;
     std::cin >> DEPTH;
     if (COLORIZATION == 2) {
         std::cout << GREEN << "Enter ADD_HUE (145), COEF_HUE (260), SAT (1) : \n" << BLUE;
-        std::cin >> ADD_HUE >> COEF_HUE >> SAT;
+        std::cin >> RGB_COEF[0] >> RGB_COEF[1] >> RGB_COEF[2];
     } else if (COLORIZATION == 1) {
         std::cout << GREEN << "Enter Red coef (9), Green coef (15) and Blue coef (8.5) : \n" << BLUE;
         std::cin >> RGB_COEF[0] >> RGB_COEF[1] >> RGB_COEF[2];
-    }
+    };
     if (TYPE == 2) {
         std::cout << GREEN << "Enter CX (-0.7), CY (0.3) : \n" << BLUE;
         std::cin >> C.first >> C.second;
         fractal = new JuliaSet(1200, 900, DEPTH, threads, COLORIZATION, RGB_COEF, C);
     } else if (TYPE == 1) {
         fractal = new MandelbrotSet(1200, 900, DEPTH, threads, COLORIZATION, RGB_COEF);
-    }
+    } else if (TYPE == 3) {
+        fractal = new NewtonSet(1200, 900, DEPTH, threads, COLORIZATION, RGB_COEF, std::vector<std::complex<double>>{-1, 0, 0, 1});
+    };
 
     sf::RenderWindow window(sf::VideoMode({1200, 900}), "Fractal preview");
     sf::Image image({1200, 900}, sf::Color::Black);
