@@ -8,10 +8,6 @@ void NewtonSet::compute_fractal() {
     int thread_division = HEIGHT / NUM_THREADS;
 
     for (size_t i = 1; i < pol.size(); i++) {dpol.push_back(pol[i] * (double)i);};
-
-    std::cout << pol[0] << " " << pol[1] << " " << pol[2] << " " << pol[3] << std::endl;
-    std::cout << dpol[0] << " " << dpol[1] << " " << dpol[2] << std::endl;
-
     for (int i = 0; i < NUM_THREADS; i++) {
         int start = i * thread_division;
         int end = (i == NUM_THREADS - 1) ? HEIGHT : (i + 1) * thread_division;

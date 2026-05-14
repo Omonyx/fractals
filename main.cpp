@@ -44,7 +44,10 @@ int main() {
     } else if (TYPE == 1) {
         fractal = new MandelbrotSet(1200, 900, DEPTH, threads, COLORIZATION, RGB_COEF);
     } else if (TYPE == 3) {
-        fractal = new NewtonSet(1200, 900, DEPTH, threads, COLORIZATION, RGB_COEF, std::vector<std::complex<double>>{-1, 0, 0, 1});
+        std::vector<std::complex<double>> polynomial{0, 0, 0, 0, 0, 0, 0};
+        std::cout << GREEN << "Enter polynomial constant, z, z**2, z**3, z**4, z**5, z**6\n" << BLUE;
+        std::cin >> polynomial[0] >> polynomial[1] >> polynomial[2] >> polynomial[3] >> polynomial[4] >> polynomial[5] >> polynomial[6];
+        fractal = new NewtonSet(1200, 900, DEPTH, threads, COLORIZATION, RGB_COEF, polynomial);
     } else if (TYPE == 4) {
         fractal = new BurningShip(1200, 900, DEPTH, threads, COLORIZATION, RGB_COEF);
     };

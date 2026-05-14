@@ -52,6 +52,8 @@ void Fractal::reset_zoom() {
     y_max = 0.5;
 };
 void Fractal::render_fractal(sf::Image& new_image) {
+    std::vector<sf::Color> colorsCircle = {sf::Color(220, 0, 0), sf::Color(0, 220, 0), sf::Color(0, 0, 220), sf::Color(220, 220, 0), sf::Color(220, 0, 220), sf::Color(0, 220, 220)};
+    std::vector<std::complex<double>> roots;
     for (unsigned int y = 0; y < HEIGHT; y++) {
         for (unsigned int x = 0; x < WIDTH; x++) {
             double t = smoother[y * WIDTH + x];
@@ -64,29 +66,24 @@ void Fractal::render_fractal(sf::Image& new_image) {
                 RGB color_convert = hsv_to_rgb(RGB_COEF[0] + RGB_COEF[1] * t, RGB_COEF[2], iterations[y * WIDTH + x] == MAX_ITER ? 0 : 1);
                 new_image.setPixel({x, y}, sf::Color(color_convert.r, color_convert.g, color_convert.b));
             } else if (COLORIZATION == 3) {
-                std::vector<std::complex<double>> roots = {{1, 0}, {-0.5,  sqrt(3) / 2}, {-0.5, -sqrt(3) / 2}};
-                int rootIndex = 0;
-                double best = 1e9;
-
-                for (int i = 0; i < roots.size(); i++) {
-                    double d = std::abs(zs[y * WIDTH + x] - roots[i]);
-
-                    if (d < best) {
-                        best = d;
-                        rootIndex = i;
-                    };
-                };
-
+                std::complex<double> z_final = zs[y * WIDTH + x];
+                int rootIndex = -1;
                 sf::Color color(0, 0, 0);
                 double t = 0.5 + 0.5 * sin(smoother[y * WIDTH + x] * 0.3);
 
-                if (rootIndex == 0)
-                    color.r = 220 * t;
-                else if (rootIndex == 1)
-                    color.g = 220 * t;
-                else
-                    color.b = 220 * t;
-                new_image.setPixel({x, y}, sf::Color(color.r, color.g, color.b));
+                for (int i = 0; i < roots.size(); i++) {
+                    if (std::abs(z_final - roots[i]) < 1e-6) {
+                        rootIndex = i;
+                        break;
+                    }
+                };
+                if (rootIndex == -1) {
+                    roots.push_back(z_final);
+                    rootIndex = roots.size() - 1;
+                };
+                color = colorsCircle[rootIndex % colorsCircle.size()];
+
+                new_image.setPixel({x, y}, sf::Color(color.r * t, color.g * t, color.b * t));
             };
         };
     };
