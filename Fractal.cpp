@@ -46,10 +46,10 @@ void Fractal::zoom(double new_x_min, double new_x_max, double new_y_min, double 
     y_max = new_y_max;
 };
 void Fractal::reset_zoom() {
-    x_min = -2;
-    x_max = 2;
-    y_min = -1.5;
-    y_max = 1.5;
+    x_min = -2.5;
+    x_max = 1.5;
+    y_min = -2;
+    y_max = 0.5;
 };
 void Fractal::render_fractal(sf::Image& new_image) {
     for (unsigned int y = 0; y < HEIGHT; y++) {
@@ -64,7 +64,7 @@ void Fractal::render_fractal(sf::Image& new_image) {
                 RGB color_convert = hsv_to_rgb(RGB_COEF[0] + RGB_COEF[1] * t, RGB_COEF[2], iterations[y * WIDTH + x] == MAX_ITER ? 0 : 1);
                 new_image.setPixel({x, y}, sf::Color(color_convert.r, color_convert.g, color_convert.b));
             } else if (COLORIZATION == 3) {
-                std::vector<std::complex<double>> roots = {{1, 0}, {-0.5,  sqrt(3)/2}, {-0.5, -sqrt(3)/2}};
+                std::vector<std::complex<double>> roots = {{1, 0}, {-0.5,  sqrt(3) / 2}, {-0.5, -sqrt(3) / 2}};
                 int rootIndex = 0;
                 double best = 1e9;
 
